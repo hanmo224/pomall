@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.pomall.mapper.StateChartMapper">
+
+	<select id="firstCategoryOrderPrice" resultType="com.pomall.dto.StateChartDTO">
+	
+		select 
+			c.cg_name as categoryname, sum(ot.dt_amount * ot.dt_price) as orderprice
+		from 
+			product_tb p, ordetail_tb ot,
+		    (select 
+		    	p.cg_name, c.cg_code from category_tb c, category_tb p 
+		     where
+		     	c.cg_procode = p.cg_code) c
+		where 
+			p.pro_code = ot.pro_code
+		and 
+			p.cg_code = c.cg_code
+		group by 
+			c.cg_name
+		order by 
+			c.cg_name
+	
+	</select>
+	
+	<select id="firstCategoryChart" resultMap="firstCategoryMapList">
+	
+		select 
+			c.cg_name as categoryname, sum(ot.dt_amount * ot.dt_price) as orderprice
+		from 
+			product_tb p, ordetail_tb ot,
+		    (select 
+		    	p.cg_name, c.cg_code from category_tb c, category_tb p 
+		     where
+		     	c.cg_procode = p.cg_code) c
+		where 
+			p.pro_code = ot.pro_code
+		and 
+			p.cg_code = c.cg_code
+		group by 
+			c.cg_name
+		order by 
+			c.cg_name
+	
+	</select>
+	
+	<resultMap type="map" id="firstCategoryMapList">
+	
+		<result column="categoryname" property="categoryname" />
+		<result column="orderprice" property="orderprice" />
+	
+	</resultMap>
+	
+	<select id="secondCategoryOrderPrice" resultType="com.pomall.dto.StateChartDTO">
+	
+	    SELECT
+		    c2.cg_name AS categoryname,
+		    SUM(ot.dt_amount * ot.dt_price) AS orderprice
+		FROM
+		    product_tb p
+		    JOIN ordetail_tb ot ON p.pro_code = ot.pro_code
+		    JOIN category_tb c2 ON p.cg_code = c2.cg_code
+		    JOIN category_tb c1 ON c2.cg_procode = c1.cg_code
+		GROUP BY
+		    c2.cg_name
+		ORDER BY
+		    c2.cg_name
+	        
+	</select>
+	
+	<select id="secondCategoryChart" resultMap="secondCategoryMapList">
+	
+	    SELECT
+		    c2.cg_name AS categoryname,
+		    SUM(ot.dt_amount * ot.dt_price) AS orderprice
+		FROM
+		    product_tb p
+		    JOIN ordetail_tb ot ON p.pro_code = ot.pro_code
+		    JOIN category_tb c2 ON p.cg_code = c2.cg_code
+		    JOIN category_tb c1 ON c2.cg_procode = c1.cg_code
+		GROUP BY
+		    c2.cg_name
+		ORDER BY
+		    c2.cg_name
+	        
+	</select>
+	
+	<resultMap type="map" id="secondCategoryMapList">
+	
+	    <id property="categoryname" column="categoryname" />
+	    <result property="orderprice" column="orderprice" />
+	    
+	</resultMap>
+	
+</mapper>
+
+
+
+
+
+
+
+
+
+
+
+
+

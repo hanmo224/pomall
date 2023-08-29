@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.pomall.mapper.AdBoardMapper">
+	
+	<insert id="insert">
+		insert into 
+			adboard_tb(adbo_num, adbo_title, adbo_writer, adbo_content)
+		values
+			(seq_adboard_tb.nextval, #{adbo_title}, #{adbo_writer}, #{adbo_content})
+	</insert>
+	
+	<sql id="criteria">
+		<trim prefix="(" suffix=") AND " prefixOverrides="OR">
+			<foreach collection="typeArr" item="type">
+				<trim prefix="OR">
+					<choose>
+						<when test="type == 'T'.toString()">
+							adbo_title like '%' || #{keyword} || '%'
+						</when>
+						<when test="type == 'W'.toString()">
+							adbo_writer like '%' || #{keyword} || '%'
+						</when>
+					</choose>
+				</trim>
+			</foreach>
+		</trim>
+	</sql>
+	
+	<select id="getListWithPaging" resultType="com.pomall.domain.AdBoardVO">
+		SELECT RN, adbo_num, adbo_title, adbo_writer, adbo_content, ad_reg_date, ad_up_date
+		FROM (SELECT /*+INDEX_DESC(adboard_tb pk_adbo_num) */ 
+			  ROWNUM RN, adbo_num, adbo_title, adbo_writer, adbo_content, ad_reg_date, ad_up_date
+       		  FROM adboard_tb 
+       		  where
+       		  <include refid="criteria"></include>
+        <![CDATA[   
+       		  ROWNUM <= (#{pageNum} * #{amount}))
+		WHERE rn > ((#{pageNum} - 1) * #{amount})
+		]]>
+	</select>
+	 
+	<select id="getTotalCount" resultType="int">
+		select 
+			count(*) 
+		from 
+			adboard_tb
+		where 
+		<include refid="criteria"></include>
+		adbo_num > 0
+	</select>
+	
+	<select id="get" resultType="com.pomall.domain.AdBoardVO">
+		SELECT 
+			adbo_num, adbo_title, adbo_writer, adbo_content, ad_reg_date, ad_up_date
+		from 
+			adboard_tb 
+		where 
+			adbo_num = #{adbo_num}
+	</select>
+	
+	<update id="modify">
+		update 
+			adboard_tb 
+		set 
+			adbo_title = #{adbo_title}, adbo_content = #{adbo_content}, ad_up_date = sysdate 
+		where 
+			adbo_num = #{adbo_num}
+	</update>
+	
+	<delete id="delete">
+		delete 
+		from 
+			adboard_tb 
+		where 
+			adbo_num = #{adbo_num}
+	</delete>
+	
+</mapper>

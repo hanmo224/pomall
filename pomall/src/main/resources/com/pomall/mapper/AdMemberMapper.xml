@@ -1,0 +1,146 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.pomall.mapper.AdMemberMapper">
+
+	<sql id="period">
+	    <if test="create_sDate != null and !create_sDate.equals('') and create_eDate != null and !create_eDate.equals('')">
+	        <![CDATA[
+	        join_date >= to_date(#{create_sDate}) 
+	        and
+	        join_date < to_date(#{create_eDate}) + 1
+	        and
+	        ]]>
+	    </if>
+	</sql>
+
+	<sql id="period2">
+	    <if test="up_sDate != null and !up_sDate.equals('') and up_eDate != null and !up_eDate.equals('')">
+	        <![CDATA[
+	        up_date >= to_date(#{up_sDate}) 
+	        and
+	        up_date < to_date(#{up_eDate}) + 1
+	        and
+	        ]]>
+	    </if>
+	</sql>
+
+	<sql id="criteria">
+	    <trim prefix="(" suffix=") AND " prefixOverrides="OR">
+	        <foreach collection="cri.typeArr" item="type">
+	            <trim prefix="OR">
+	                <choose>
+	                    <when test="type == 'N'.toString()">
+	                        mb_nick like '%' || #{cri.keyword} || '%'
+	                    </when>
+	                    <when test="type == 'G'.toString()">
+	                        mb_gender like '%' || #{cri.keyword} || '%'
+	                    </when>
+	                    <when test="type == 'NA'.toString()">
+	                        mb_name like '%' || #{cri.keyword} || '%'
+	                    </when>
+	                </choose>
+	            </trim>
+	        </foreach>
+	    </trim>
+	</sql>
+
+	<select id="memberList" resultType="com.pomall.domain.MemberVO">
+	    SELECT RN, mb_id, mb_gender, mb_name, mb_rrn, mb_pw, mb_nick, mb_phone, mb_email, mb_zipcode, mb_addr, mb_detaddr, mb_receive, mb_point, last_date, join_date, up_date, status, inactive_date
+	    FROM (select /* +index_desc(MEMBER_TB PK_MB_ID) */ rownum RN, mb_id, mb_gender, mb_name, mb_rrn, mb_pw, mb_nick, mb_phone, mb_email, mb_zipcode, mb_addr, mb_detaddr, mb_receive, mb_point, last_date, join_date, up_date, status, inactive_date
+	          from MEMBER_TB
+	          WHERE status = '회원'
+	          and
+	          <include refid="criteria"></include>
+	          <include refid="period"></include>
+	          <include refid="period2"></include>
+	          <![CDATA[
+	          ROWNUM <= (#{cri.pageNum} * #{cri.amount}))
+	    WHERE rn > ((#{cri.pageNum} - 1) * #{cri.amount})
+	    ]]>
+	</select>
+
+	<!-- 조건식 sql 사용 -->
+	<select id="getTotalCount" resultType="int">
+	
+		select count(*) from MEMBER_TB
+		where 
+		<!-- 검색 부분 -->		
+		<include refid="period"></include>
+		<include refid="period2"></include>
+		<include refid="criteria"></include>
+		<!-- sql문이 둘다(include)들어 오기 때문에 문법에 문제가 없어야 하기 때문에 넣어줌 -->
+		1 > 0
+		
+	</select>
+	
+	<select id="memberDetail" resultType="com.pomall.domain.MemberVO">
+	
+		select
+			mb_id, mb_gender, mb_name, mb_rrn, mb_pw, mb_nick, mb_phone, mb_email, mb_zipcode, mb_addr, mb_detaddr, mb_receive, mb_point, last_date, join_date, up_date, status, inactive_date
+		from
+			member_tb
+		where
+			mb_id = #{mb_id}
+	</select>
+	
+	<sql id="period3">
+		<if test="inactive_sDate != null and !inactive_sDate.equals('') and inactive_sDate != null and !inactive_sDate.equals('')">
+			<!-- 컬럼의 형변환 작업을 하지 말고 들어오는 값을 형변환 해줘야 성능 저하가 덜함. 변환 함수 to_date -->
+			<!-- https://thebook.io/006696/0110/ -->
+			<!-- eDate에 +1 이유는 그 전날 데이터를 가져오기 위함 -->
+			<![CDATA[
+			inactive_date >= to_date(#{inactive_sDate}) 
+			and
+			inactive_date < to_date(#{inactive_eDate}) + 1
+			and
+			]]>
+		</if>
+	</sql>
+	
+	<!-- 조건식 sql 사용 -->
+	<select id="member_inactive" resultType="com.pomall.domain.MemberVO">
+	
+		<!-- 별칭을 사용하면 인덱스 힌트 안에 별칭을 넣어주고 사용 안하면 테이블명을 넣어줌 -->
+		SELECT RN, mb_id, mb_gender, mb_name, mb_rrn, mb_pw, mb_nick, mb_phone, mb_email, mb_zipcode, mb_addr, mb_detaddr, mb_receive, mb_point, last_date, join_date, up_date, status, inactive_date 
+		FROM (select /* +index_desc(MEMBER_TB PK_MB_ID) */ rownum RN, mb_id, mb_gender, mb_name, mb_rrn, mb_pw, mb_nick, mb_phone, mb_email, mb_zipcode, mb_addr, mb_detaddr, mb_receive, mb_point, last_date, join_date, up_date, status, inactive_date
+			  from MEMBER_TB
+       		  WHERE status = '탈퇴회원'
+       		  and
+       		  <include refid="criteria"></include>
+       		  <include refid="period3"></include>
+        <![CDATA[   
+       		   ROWNUM <= (#{cri.pageNum} * #{cri.amount}))
+		WHERE rn > ((#{cri.pageNum} - 1) * #{cri.amount})
+		]]>
+		
+	</select>
+	
+	<!-- 조건식 sql 사용 -->
+	<select id="getTotalCount2" resultType="int">
+	
+		select count(*) from MEMBER_TB
+		where 
+		<!-- 검색 부분 -->		
+		<include refid="period3"></include>
+		<include refid="criteria"></include>
+		<!-- sql문이 둘다(include)들어 오기 때문에 문법에 문제가 없어야 하기 때문에 넣어줌 -->
+		1 > 0
+		
+	</select>
+	
+</mapper>
+
+
+
+
+
+
+
+
+
+
+
+
+

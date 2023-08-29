@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.pomall.mapper.ReviewMapper">
+
+	<select id="review_list" resultType="com.pomall.domain.ReviewVO">
+	
+		SELECT RN, rev_num, mb_id, pro_code, rev_content, rev_point, rev_regdate
+		FROM (SELECT /*+INDEX_DESC(review_tb pk_review_tb) */ ROWNUM rn, rev_num, mb_id, pro_code, rev_content, rev_point, rev_regdate
+      	FROM review_tb
+      	where pro_code = #{pro_code}
+      	<![CDATA[	
+      	and ROWNUM <= (#{cri.pageNum} * #{cri.amount}))
+		WHERE rn > ((#{cri.pageNum} - 1) * #{cri.amount})
+		]]>
+	
+	</select>
+	
+	<select id="review_count" resultType="int">
+	
+		select 
+			count(*) 
+		from 
+			review_tb 
+		where 
+			pro_code = #{pro_code}
+		
+	</select>
+	
+	<insert id="create">
+	
+		insert into review_tb(rev_num, mb_id, pro_code, rev_content, rev_point)
+		values(seq_REVIEW_TB.nextval, #{mb_id}, #{pro_code}, #{rev_content}, #{rev_point})
+	
+	</insert>
+	
+	<update id="modify">
+	
+		update
+			review_tb
+		set
+			rev_content = #{rev_content}, rev_point = #{rev_point}, rev_regdate = sysdate
+		where
+			rev_num = #{rev_num}
+	
+	</update>
+	
+	<delete id="delete">
+	
+		delete from review_tb
+		where rev_num = #{rev_num}
+	
+	</delete>
+
+</mapper>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

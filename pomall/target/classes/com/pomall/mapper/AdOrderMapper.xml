@@ -1,0 +1,268 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.pomall.mapper.AdOrderMapper">
+
+	<sql id="period">
+		<if test="sDate != null and !sDate.equals('') and sDate != null and !sDate.equals('')">
+			<![CDATA[
+			ord_regdate >= to_date(#{sDate}) 
+			and
+			ord_regdate < to_date(#{eDate}) + 1
+			and
+			]]>
+		</if>
+	</sql>
+		
+	<sql id="criteria">
+		<trim prefix="(" suffix=") AND " prefixOverrides="OR">
+			<foreach collection="cri.typeArr" item="type">
+				<trim prefix="OR">
+					<choose>
+						<when test="type == 'C'.toString()">
+							ord_code like '%' || #{cri.keyword} || '%'
+						</when>
+						<when test="type == 'I'.toString()">
+							mb_id like '%' || #{cri.keyword} || '%'
+						</when>
+						<when test="type == 'R'.toString()">
+							ord_name like '%' || #{cri.keyword} || '%'
+						</when>
+					</choose>
+				</trim>
+			</foreach>
+		</trim>
+	</sql>
+		
+	<select id="orderList" resultType="com.pomall.domain.OrderVO">
+		SELECT RN, ord_code, mb_id, ord_name, ord_price, ord_regdate, pay_method, status, cancel_date
+		FROM (select /* +index_desc(order_tb pk_ord_code) */ rownum RN, ord_code, mb_id, ord_name, ord_price, ord_regdate, pay_method, status, sysdate as cancel_date
+			  from order_tb
+	   		  where status = '주문완료'
+	   		  and
+	   		  <include refid="criteria"></include>
+	   		  <include refid="period"></include>
+	   	  <![CDATA[   
+	   		   ROWNUM <= (#{cri.pageNum} * #{cri.amount}))
+		WHERE rn > ((#{cri.pageNum} - 1) * #{cri.amount})
+		]]>
+			
+	</select>
+		
+	<select id="getTotalCount" resultType="int">
+		select count(*) from order_TB
+		where 
+		<include refid="criteria"></include>
+		<include refid="period"></include>
+		ord_code > 0	
+	</select>
+	
+	<select id="orderDetail" resultType="com.pomall.domain.AdOrderDetailVO">
+	
+		select 
+			ot.ord_code, ot.pro_code, ot.dt_amount, ot.dt_price, ot.unitprice, p.pro_name, p.pro_img, p.pro_up_folder, ot.status
+		from 
+			ordetail_tb ot inner join product_tb p
+		on 
+			ot.pro_code = p.pro_code
+		where 
+			ot.ord_code = #{ord_code}
+	
+	</select>
+	
+	<delete id="orderDetailProductDelete">
+	
+		delete from
+			ordetail_tb
+		where
+			ord_code = #{ord_code}
+		and
+			pro_code = #{pro_code}
+	
+	</delete>
+	
+	<delete id="orderDetailCheckProductDelete">
+	
+		delete from
+			ordetail_tb
+		where
+			ord_code = #{ord_code}
+		and
+			pro_code = #{pro_code}
+	
+	</delete>
+	
+	<delete id="orderListDelete">
+	
+		delete from
+			order_tb
+		where
+			ord_code = #{ord_code}
+	
+	</delete>
+	
+	<delete id="orderProDelete">
+	
+		delete from
+			ordetail_tb
+		where
+			ord_code = #{ord_code}
+	
+	</delete>
+	
+	<delete id="orderPayDelete">
+	
+		delete from
+			payment_tb
+		where
+			ord_code = #{ord_code}
+	
+	</delete>
+	
+	<delete id="orderCancelDelete">
+	
+		delete from
+			order_tb
+		where
+			ord_code = #{ord_code}
+	
+	</delete>
+	
+	<delete id="orderProCancelDelete">
+	
+		delete from
+			ordetail_tb
+		where
+			ord_code = #{ord_code}
+	
+	</delete>
+	
+	<delete id="orderPayCancelDelete">
+	
+		delete from
+			payment_tb
+		where
+			ord_code = #{ord_code}
+	
+	</delete>
+	
+	<delete id="orderCheckedDelete">
+	
+		delete from
+			order_tb
+		where
+			ord_code in
+			<foreach collection="list" item="ord_code" open="(" close=")" separator=",">
+				#{ord_code}
+			</foreach>
+			
+	</delete>
+	
+	<delete id="orderCheckedProDelete">
+	
+		delete from
+			ordetail_tb
+		where
+			ord_code in
+			<foreach collection="list" item="ord_code" open="(" close=")" separator=",">
+				#{ord_code}
+			</foreach>
+			
+	</delete>
+	
+	<delete id="orderCheckedPayDelete">
+	
+		delete from
+			payment_tb
+		where
+			ord_code in
+			<foreach collection="list" item="ord_code" open="(" close=")" separator=",">
+				#{ord_code}
+			</foreach>
+			
+	</delete>
+	
+	<sql id="period2">
+		<if test="cancel_sDate != null and !cancel_sDate.equals('') and cancel_sDate != null and !cancel_sDate.equals('')">
+			<!-- 컬럼의 형변환 작업을 하지 말고 들어오는 값을 형변환 해줘야 성능 저하가 덜함. 변환 함수 to_date -->
+			<!-- https://thebook.io/006696/0110/ -->
+			<!-- eDate에 +1 이유는 그 전날 데이터를 가져오기 위함 -->
+			<![CDATA[
+			cancel_date >= to_date(#{cancel_sDate}) 
+			and
+			cancel_date < to_date(#{cancel_eDate}) + 1
+			and
+			]]>
+		</if>
+	</sql>
+	
+	<!-- 검색조건 작업 : include로 참조 -->
+	<sql id="criteria2">
+		<trim prefix="(" suffix=") AND " prefixOverrides="OR"> <!-- trim태그 sql구문중에  맨 앞에 or가 중복되면 제거  -->
+			<foreach collection="cri.typeArr" item="type">
+				<trim prefix="OR">
+					<choose>
+						<when test="type == 'M'.toString()">
+							mb_id like '%' || #{cri.keyword} || '%'
+						</when>
+						<when test="type == 'N'.toString()">
+							ord_name like '%' || #{cri.keyword} || '%'
+						</when>
+						<when test="type == 'P'.toString()">
+							pay_method like '%' || #{cri.keyword} || '%'
+						</when>
+					</choose>
+				</trim>
+			</foreach>
+		</trim>
+	</sql>
+	
+	<select id="order_cancel" resultType="com.pomall.domain.OrderVO">
+    
+	    SELECT RN, ord_code, mb_id, ord_name, ord_price, ord_regdate, pay_method, status, cancel_date
+		FROM (select /* +index_desc(order_tb pk_ord_code) */ rownum RN, ord_code, mb_id, ord_name, ord_price, ord_regdate, pay_method, status, cancel_date
+			  from order_tb
+       		  where status = '주문취소'
+       		  and
+       		  <include refid="criteria2"></include>
+       		  <include refid="period"></include>
+       		  <include refid="period2"></include>
+        <![CDATA[   
+       		   ROWNUM <= (#{cri.pageNum} * #{cri.amount}))
+		WHERE rn > ((#{cri.pageNum} - 1) * #{cri.amount})
+		]]>
+	    
+	</select>
+	
+	<select id="getTotalCount2" resultType="int">
+	
+		select count(*) from order_TB
+		where 
+		<!-- 검색 부분 -->
+		<include refid="period"></include>	
+		<include refid="period2"></include>
+		<include refid="criteria2"></include>
+		<!-- sql문이 둘다(include)들어 오기 때문에 문법에 문제가 없어야 하기 때문에 넣어줌 -->
+		ord_code > 0
+		
+	</select>
+	
+</mapper>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

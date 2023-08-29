@@ -1,0 +1,127 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.pomall.mapper.MemberMapper">
+
+	<select id="idCheck" resultType="string">
+		
+		select mb_id from member_tb where mb_id = #{mb_id}
+		
+	</select>
+
+	<select id="nickCheck" resultType="string">
+	
+		select mb_nick from member_tb where mb_nick = #{mb_nick}
+	
+	</select>
+
+	<insert id="join">
+		
+		insert into member_tb(mb_id, mb_gender, mb_name, mb_rrn, mb_pw, mb_nick, mb_phone, mb_email, mb_zipcode, mb_addr, mb_detaddr)
+		values(#{mb_id}, #{mb_gender}, #{mb_name}, #{mb_rrn}, #{mb_pw}, #{mb_nick}, #{mb_phone}, #{mb_email}, #{mb_zipcode}, #{mb_addr}, #{mb_detaddr})
+		
+	</insert>
+	
+	<select id="login" resultType="com.pomall.domain.MemberVO">
+	
+		select
+			mb_id, mb_gender, mb_name, mb_rrn, mb_pw, mb_nick, mb_phone, mb_email, mb_zipcode, mb_addr, mb_detaddr, mb_receive, mb_point, last_date, join_date, up_date, status
+		from
+			member_tb
+		where
+			mb_id = #{mb_id}
+	
+	</select>
+	
+	<update id="now_visit">
+	
+		update
+			member_tb
+		set
+			last_date = sysdate
+		where
+			mb_id = #{mb_id}	
+		
+	</update>
+	
+	<update id="modify">
+	
+		update
+			member_tb
+		set
+			mb_name = #{mb_name}, mb_email = #{mb_email}, mb_zipcode = #{mb_zipcode}, mb_addr = #{mb_addr}, mb_detaddr = #{mb_detaddr}, mb_phone = #{mb_phone}, mb_nick = #{mb_nick}, up_date = sysdate
+		where
+			mb_id = #{mb_id}
+		
+	</update>
+	
+	<update id="pwchange">
+	
+		update
+			member_tb
+		set
+			mb_pw = #{new_mb_pw}
+		where
+			mb_id = #{mb_id}
+	
+	</update>
+	
+	<update id="delete">
+	
+		update
+			member_tb
+		set
+			status = '탈퇴회원'
+		where
+			mb_id = #{mb_id}
+	
+	</update>
+	
+	<insert id="findID1">
+	
+		insert into member_tb(mb_name, mb_email)
+		values(#{mb_name}, #{mb_email})
+	
+	</insert>
+	
+	<select id="findID2" resultType="string">
+	
+		select
+			mb_id
+		from
+			member_tb
+		where
+			mb_name = #{mb_name}
+		and
+			mb_email = #{mb_email}
+	
+	</select>
+	
+	
+	<insert id="findPW1">
+	
+		insert into member_tb(mb_id, mb_email)
+		values(#{mb_id}, #{mb_email})
+	
+	</insert>
+	
+	<select id="checkIdAndEmail" resultType="boolean"> 
+		select 
+			count(*)
+		from 
+			member_tb 
+		where 
+			mb_id = #{sendTPW} and mb_email = #{pw_email} 
+	</select>
+	
+	<update id="updatePassword"> 
+		update 
+			member_tb 
+		set 
+			mb_pw = #{enc_pw} 
+		where 
+			mb_email = #{pw_email} 
+	</update>
+
+</mapper>  

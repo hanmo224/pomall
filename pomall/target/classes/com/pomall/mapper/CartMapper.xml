@@ -1,0 +1,120 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.pomall.mapper.CartMapper">
+
+	<!-- 머지는 테이블에 데이터가 존재하면 업데이트 해주고 없으면 인서트 작업을 해줌, 단순히 인서트로 작업을 하면 똑같은 데이터를 넣었을때 업데이트가 안됨. -->
+	<insert id="cart_add">
+		
+		merge into cart_tb
+		
+		using dual
+		
+		on (mb_id = #{mb_id} and pro_code = #{pro_code})
+			
+		when matched then
+		    update set ca_amount = ca_amount + #{ca_amount}
+		    
+		when not matched then
+		    insert(ca_code, pro_code, mb_id, ca_amount)
+		    values(seq_ca_code.nextval, #{pro_code}, #{mb_id}, #{ca_amount})
+	
+	</insert>
+
+	<select id="cart_list" resultType="com.pomall.dto.CartListDTO">
+	
+		SELECT 
+			rownum num, C.ca_code, P.pro_up_folder, P.pro_img, P.pro_code, P.pro_name, P.pro_price, C.ca_amount, P.pro_price * C.ca_amount as unitprice
+		FROM 
+			product_tb p INNER JOIN cart_tb c
+		ON 
+			p.pro_code = c.pro_code
+		WHERE 
+			c.MB_ID = #{MB_ID}
+	
+	</select>
+	
+	<update id="cart_amount_change">
+	
+		update
+			cart_tb
+		set
+			ca_amount = #{ca_amount}
+		where
+			ca_code = #{ca_code}
+	
+	</update>
+	
+	<delete id="cart_delete">
+	
+		delete from cart_tb where ca_code = #{ca_code}
+	
+	</delete>
+	
+	<delete id="cart_check_delete">
+	
+		delete 
+			from cart_tb 
+		where 
+			ca_code in
+			<foreach collection="list" item="ca_code" open="(" close=")" separator=",">
+				#{ca_code}
+			</foreach> 
+	
+	</delete>
+	
+	<select id="cart_tot_price" resultType="integer">
+	
+		SELECT 
+			sum(P.pro_price * C.ca_amount) as cart_tot_price
+		FROM 
+			product_tb p INNER JOIN cart_tb c
+		ON 
+			p.pro_code = c.pro_code
+		WHERE 
+			c.MB_ID = #{MB_ID}
+	
+	</select>
+	
+	<delete id="cart_empty">
+	
+		delete from cart_tb where mb_id = #{mb_id}
+	
+	</delete>
+	
+	<select id="getCartItemCount" resultType="int">
+	
+		select 
+			count(*)
+		from 
+			cart_tb
+		where 
+			mb_id = #{mb_id}
+	
+	</select>
+	
+</mapper>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
